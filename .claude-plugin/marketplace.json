@@ -1,0 +1,19 @@
+{
+  "name": "cocotec",
+  "owner": {
+    "name": "Cocotec",
+    "email": "support@cocotec.io"
+  },
+  "plugins": [
+    {
+      "name": "popili",
+      "source": "./popili",
+      "description": "Allows the Popili formal verification tools to be used on Coco programs within Claude Code"
+    },
+    {
+      "name": "popili-beta",
+      "source": "./popili-beta",
+      "description": "Beta releases of the Popili plugin"
+    }
+  ]
+}

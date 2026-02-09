@@ -1,0 +1,8 @@
+{
+  "name": "popili",
+  "description": "Coco formal verification tools — language server and MCP integration for Popili",
+  "version": "0.1.0",
+  "author": {
+    "name": "Cocotec"
+  }
+}

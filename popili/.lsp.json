@@ -1,0 +1,9 @@
+{
+  "popili": {
+    "command": "${POPILI_PATH:-popili}",
+    "args": ["serve-lsp"],
+    "extensionToLanguage": {
+      ".coco": "coco"
+    }
+  }
+}
