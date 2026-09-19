@@ -1,0 +1,40 @@
+name: Validate
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # `build` is the required check in the ruleset.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate plugins
+        run: python3 .github/scripts/validate.py
+
+      - name: Compile scripts
+        run: python3 -m compileall -q .github/scripts
+
+  # Not the required check: `build` stays stdlib-only so an outage upstream cannot block a sync.
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Typecheck scripts
+        # Run from inside the directory so `import validate` resolves. Pinned: --strict gains checks.
+        run: |
+          pip install --quiet mypy==2.3.1
+          cd .github/scripts && mypy --strict .

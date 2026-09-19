@@ -67,7 +67,10 @@ def get_installation_token(jwt: str, installation_id: str) -> str:
         },
     )
     with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())['token']
+        token = json.loads(resp.read())['token']
+    if not isinstance(token, str):
+        sys.exit(f"Error: GitHub returned a {type(token).__name__} installation token, expected a string")
+    return token
 
 
 def env(name: str) -> str:
@@ -77,7 +80,7 @@ def env(name: str) -> str:
     return value
 
 
-def main():
+def main() -> None:
     jwt = create_jwt(
         app_id=env('COCOTEC_BOT_APP_ID'),
         project=env('GCP_KMS_PROJECT'),

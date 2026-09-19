@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
-"""Download and extract the Popili Claude Code plugin from dl.cocotec.io.
+"""Download a released plugin version and extract it over the right channel directory.
 
-Determines the target plugin directory (popili or popili-beta) based on the
-version string, downloads the plugin zip, extracts it, and validates that
-the plugin.json version was stamped correctly.
-
-Prints the plugin directory name to stdout for use by the workflow.
+Prints the plugin directory name to stdout for the workflow.
 """
 
 import argparse
@@ -16,6 +12,10 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+from validate import AGENT_MANIFEST, validate_plugin
+
+ARCHIVE = "popili-agent-plugin.zip"
+
 
 def determine_channel(version: str) -> str:
   """Return the plugin directory name based on version string."""
@@ -24,15 +24,15 @@ def determine_channel(version: str) -> str:
   return "popili"
 
 
-def main():
+def main() -> None:
   parser = argparse.ArgumentParser()
   parser.add_argument("--version", required=True)
   args = parser.parse_args()
 
-  zip_path = Path("claude-code-plugin.zip")
+  zip_path = Path(ARCHIVE)
   target = Path(determine_channel(args.version))
 
-  url = f"https://dl.cocotec.io/popili/archive/{args.version}/claude-code-plugin.zip"
+  url = f"https://dl.cocotec.io/popili/archive/{args.version}/{ARCHIVE}"
   print(f"Downloading {url}", file=sys.stderr)
   urllib.request.urlretrieve(url, zip_path)
 
@@ -40,20 +40,16 @@ def main():
     shutil.rmtree(target)
   target.mkdir()
 
-  with zipfile.ZipFile(zip_path) as zf:
-    zf.extractall(target)
+  with zipfile.ZipFile(zip_path) as archive:
+    archive.extractall(target)
   zip_path.unlink()
 
-  plugin_json = target / ".claude-plugin" / "plugin.json"
-  if not plugin_json.exists():
-    sys.exit("ERROR: plugin.json not found in extracted zip")
+  if problems := validate_plugin(target):
+    for problem in problems:
+      print(f"ERROR: {problem}", file=sys.stderr)
+    sys.exit(f"{ARCHIVE} for {args.version} is not loadable; refusing to open a pull request")
 
-  with open(plugin_json) as f:
-    version = json.load(f)["version"]
-
-  if version == "{STABLE_BUILD_SEMANTIC_VERSION}":
-    sys.exit("ERROR: plugin.json still contains template variable")
-
+  version = json.loads((target / AGENT_MANIFEST).read_text())["version"]
   print(f"Plugin version: {version}", file=sys.stderr)
   print(target)
 
