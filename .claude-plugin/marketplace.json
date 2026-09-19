@@ -8,7 +8,7 @@
     {
       "name": "popili",
       "source": "./popili",
-      "description": "Allows the Popili formal verification tools to be used on Coco programs within Claude Code"
+      "description": "Popili formal verification and code intelligence for the Coco language"
     },
     {
       "name": "popili-beta",

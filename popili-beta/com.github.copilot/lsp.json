@@ -1,0 +1,11 @@
+{
+  "lspServers": {
+    "popili": {
+      "command": "popili",
+      "args": ["serve-lsp", "--shared"],
+      "fileExtensions": {
+        ".coco": "coco"
+      }
+    }
+  }
+}

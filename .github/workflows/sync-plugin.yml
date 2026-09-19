@@ -9,9 +9,16 @@ on:
 permissions:
   contents: write
   id-token: write
+
+# Queue rather than cancel: every release is meant to produce a sync.
+concurrency:
+  group: sync-plugin
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
 
@@ -39,24 +46,62 @@ jobs:
           GCP_KMS_KEY: ${{ secrets.GCP_KMS_KEY }}
           GCP_KMS_KEY_VERSION: ${{ secrets.GCP_KMS_KEY_VERSION }}
 
+      # Via env, not `${{ }}` interpolation, which bash would see as code.
       - name: Sync plugin
         id: sync
+        shell: bash
         run: |
-          PLUGIN_DIR=$(python3 .github/scripts/sync_plugin.py --version ${{ inputs.version }})
-          echo "plugin_dir=$PLUGIN_DIR" >> $GITHUB_OUTPUT
+          PLUGIN_DIR=$(python3 .github/scripts/sync_plugin.py --version "$VERSION")
+          echo "plugin_dir=$PLUGIN_DIR" >> "$GITHUB_OUTPUT"
+        env:
+          VERSION: ${{ inputs.version }}
 
       - name: Create Pull Request
+        shell: bash
         run: |
-          PLUGIN_DIR="${{ steps.sync.outputs.plugin_dir }}"
-          VERSION="${{ inputs.version }}"
-          git checkout -b "sync/${PLUGIN_DIR}-${VERSION}"
+          set -euo pipefail
+          BRANCH="sync/${PLUGIN_DIR}-${VERSION}"
+
           git config user.name "cocotec-automation[bot]"
           git config user.email "244153713+cocotec-automation[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
           git add "$PLUGIN_DIR"
+
+          # Re-dispatching an already-synced version is normal.
+          if git diff --cached --quiet; then
+            echo "::notice::${PLUGIN_DIR} is already at ${VERSION}; nothing to sync."
+            echo "\`${PLUGIN_DIR}\` already at \`${VERSION}\` — no changes." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           git commit --message "${PLUGIN_DIR}: update plugin to ${VERSION}"
-          git push --set-upstream origin HEAD
-          gh pr create --base main \
-            --title "${PLUGIN_DIR}: update plugin to ${VERSION}" \
-            --body "Automated update of the ${PLUGIN_DIR} plugin to version ${VERSION}."
+          # Bot-owned branch; a force can only discard a previous attempt at this sync.
+          git push --force --set-upstream origin "$BRANCH"
+
+          PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$PR" ]; then
+            URL=$(gh pr view "$PR" --json url --jq .url)
+          else
+            # printf: a block scalar leaks indentation and a heredoc eats the backticks.
+            BODY=$(printf '%s\n' \
+              "Merging publishes \`${VERSION}\` to everyone installing \`${PLUGIN_DIR}@cocotec\`." \
+              "" \
+              "Auto-merge is on, so approving this is enough.")
+            URL=$(gh pr create --base main \
+              --title "${PLUGIN_DIR}: update plugin to ${VERSION}" \
+              --body "$BODY")
+            PR="$URL"
+          fi
+
+          # Non-fatal: the pull request exists either way and can be merged by hand.
+          if MERGE_ERROR=$(gh pr merge "$PR" --auto --squash 2>&1); then
+            echo "::notice::Auto-merge enabled; merges once approved."
+          else
+            echo "::warning::Could not enable auto-merge on ${URL}: ${MERGE_ERROR}"
+          fi
+
+          echo "Synced \`${PLUGIN_DIR}\` to \`${VERSION}\`: ${URL}" >> "$GITHUB_STEP_SUMMARY"
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PLUGIN_DIR: ${{ steps.sync.outputs.plugin_dir }}
+          VERSION: ${{ inputs.version }}

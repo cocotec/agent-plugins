@@ -1,8 +1,9 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
   "mcpServers": {
     "popili": {
       "type": "stdio",
-      "command": "${POPILI_PATH:-popili}",
+      "command": "popili",
       "args": ["serve-mcp", "--shared"]
     }
   }
