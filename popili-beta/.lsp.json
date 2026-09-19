@@ -1,7 +1,7 @@
 {
   "popili": {
     "command": "${POPILI_PATH:-popili}",
-    "args": ["serve-lsp"],
+    "args": ["serve-lsp", "--shared"],
     "extensionToLanguage": {
       ".coco": "coco"
     }

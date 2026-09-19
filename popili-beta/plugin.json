@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "popili",
+  "description": "Popili formal verification and code intelligence for the Coco language",
+  "version": "0.1.0",
+  "author": {
+    "name": "Cocotec",
+    "email": "support@cocotec.io",
+    "url": "https://cocotec.io"
+  },
+  "homepage": "https://cocotec.io/popili",
+  "keywords": [
+    "coco",
+    "popili",
+    "formal-verification",
+    "model-checking"
+  ]
+}

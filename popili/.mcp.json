@@ -3,7 +3,7 @@
     "popili": {
       "type": "stdio",
       "command": "${POPILI_PATH:-popili}",
-      "args": ["serve-mcp"]
+      "args": ["serve-mcp", "--shared"]
     }
   }
 }
