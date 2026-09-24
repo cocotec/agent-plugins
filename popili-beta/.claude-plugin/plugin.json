@@ -1,7 +1,7 @@
 {
   "name": "popili",
   "description": "Popili formal verification and code intelligence for the Coco language",
-  "version": "0.1.0",
+  "version": "1.6.0-beta.1",
   "author": {
     "name": "Cocotec"
   }
